@@ -6,18 +6,16 @@
     <div class="container">
         <h1 class="d-flex justify-content-center">Ma liste de course</h1>
         <br/>
-        {{ form_start(formItem) }} {# <form ...> #}
         <div class="row g-2 d-flex justify-content-center">
             <div class="col-auto">
-                {{ form_widget(formItem.nom, {'attr': {'class': 'form-control'}}) }}
+                <input type="text" id="choiceAdd"/>
             </div>
             <div class="col-auto">
-                <button type="submit" class="btn btn-success">
+                <button type="submit" class="btn btn-success" onclick="ajouter()">
                     <i class="fa fa-plus"></i>
                 </button>
             </div>
         </div>
-        {{ form_end(formItem) }} {# </form> #}
 
         <br/>
         <table class="table">
@@ -27,34 +25,94 @@
                 <th scope="col">Actions</th>
             </tr>
             </thead>
-            <tbody>
-            {% for item in list %}
-                {% if item.isChecked == 1 %}
-                    <tr class="table-success">
-                        <th scope="row">{{ item.nom }}</th>
-                        <td>
-                            <a href="{{ path('delete_item', {id : item.id })}}">
-                                <button class="btn btn-danger del"><i class="fa fa-trash"></i></button>
-                            </a>
-                        </td>
-                    </tr>
-                {% else %}
-                    <tr>
-                        <th scope="row">{{ item.nom }}</th>
-                        <td>
-                            <a href="{{ path('check_item', {id : item.id })}}">
-                                <button class="btn btn-primary"><i class="fa fa-check"></i></button>
-                            </a>
-                            <a href="{{ path('delete_item', {id : item.id })}}">
-                                <button class="btn btn-danger del"><i class="fa fa-trash"></i></button>
-                            </a>
-                        </td>
-                    </tr>
-                {% endif %}
-            {% endfor %}
+            <tbody id="tBody">
 
             </tbody>
         </table>
     </div>
 
+    <template id="ligne">
+        <tr>
+            <th scope="row"></th>
+            <td>
+                <button class="btn btn-primary" onclick="check(this)"><i class="fa fa-check"></i></button>
+            </td>
+            <td>
+                <button class="btn btn-danger del" onclick="enlever(this)"><i class="fa fa-trash"></i></button>
+            </td>
+        </tr>
+    </template>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        let url= 'http://localhost/ENI/__symfony/TP%20API/listeDeCourse/public/api/liste/';
+        axios.get(url).then( response => {
+            let tableau = response.data;
+            console.log(tableau);
+            for( let item of tableau){
+                let tbody = document.querySelector('#tBody');
+                let template = document.querySelector('#ligne');
+                let clone = template.content.cloneNode(true);
+                // je met le clone a l'intérieur du tbody
+
+                //  un tableau de selecteur td
+                let tr = clone.querySelectorAll("tr");
+                if(item.isChecked == true) {
+                    tr[0].className = "table-success";
+                }
+                let td = clone.querySelectorAll("th");
+                td[0].innerHTML = item.nom;
+                let btnEnlever = clone.querySelector('.btn-danger');
+                btnEnlever.setAttribute('data-id',item.id);
+                let btnCheck = clone.querySelector('.btn-primary');
+                btnCheck.setAttribute('data-id',item.id);
+                tbody.appendChild(clone);
+            }
+
+        });
+
+        function check(btnCheck) {
+            let id = btnCheck.getAttribute('data-id');
+            console.log(id);
+            btnCheck.parentElement.parentElement.className = "table-success";
+            let url= 'http://localhost/ENI/__symfony/TP%20API/listeDeCourse/public/api/liste/';
+            axios.put(url + id , {isChecked : true}).then( response => {
+                let tableau = response.data;
+                console.log(tableau);
+            });
+        }
+
+        function enlever(btnDelete) {
+            let id = btnDelete.getAttribute('data-id');
+            console.log(id);
+            btnDelete.parentElement.parentElement.remove();
+            let url= 'http://localhost/ENI/__symfony/TP%20API/listeDeCourse/public/api/liste/';
+            axios.delete(url + id).then( response => {
+                let tableau = response.data;
+                console.log(tableau);
+            });
+        }
+
+        function ajouter() {
+            let text = document.getElementById("choiceAdd").value;
+            let url= 'http://localhost/ENI/__symfony/TP%20API/listeDeCourse/public/api/liste/';
+            axios.post(url, {nom:text,isChecked:false}).then( response => {
+                let tableau = response.data;
+                console.log(tableau);
+                let tbody = document.querySelector('#tBody');
+                let template = document.querySelector('#ligne');
+                let clone = template.content.cloneNode(true);
+                // je met le clone a l'intérieur du tbody
+
+                //  un tableau de selecteur td
+                let td = clone.querySelectorAll("th");
+                td[0].innerHTML = text;
+                let btnEnlever = clone.querySelector('.btn-danger');
+                btnEnlever.setAttribute('data-id',tableau.id);
+                let btnCheck = clone.querySelector('.btn-primary');
+                btnCheck.setAttribute('data-id',tableau.id);
+                tbody.appendChild(clone);
+            });
+        }
+    </script>
 {% endblock %}
